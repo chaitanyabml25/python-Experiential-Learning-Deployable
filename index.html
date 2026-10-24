@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rock Paper Scissors - Phase 3 Gaming Tracker</title>
+<style>
+:root {
+  --bg:#0B1224; --panel:#14213A; --card:#1B2D4B; --white:#F4F7FB;
+  --muted:#A9B8D0; --blue:#39A9FF; --green:#23D5AB; --red:#FF5C83;
+  --yellow:#FFC857; --purple:#9B7BFF;
+}
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--white); font-family:"Segoe UI",Arial,sans-serif; }
+header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:18px 22px 8px; }
+h1 { font-size:clamp(19px,3vw,27px); margin:0; }
+.phase { color:var(--blue); font-size:12px; font-weight:700; letter-spacing:.5px; }
+.stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; padding:8px 18px; }
+.stat { background:var(--card); border-radius:8px; text-align:center; padding:12px 8px; }
+.stat-label { color:var(--muted); font-size:12px; font-weight:700; }
+.stat-value { font-size:28px; font-weight:700; margin-top:4px; }
+.green {color:var(--green)} .red {color:var(--red)} .yellow {color:var(--yellow)} .blue {color:var(--blue)}
+main { display:grid; grid-template-columns:minmax(0,3fr) minmax(280px,2fr); gap:12px; padding:8px 18px; }
+.left { min-width:0; display:grid; grid-template-rows:auto minmax(260px,1fr); gap:12px; }
+.panel { background:var(--panel); border-radius:9px; padding:14px; min-width:0; }
+.game { text-align:center; }
+.round { color:var(--yellow); font-size:14px; font-weight:700; }
+.game h2 { margin:8px 0 12px; font-size:23px; }
+.moves { display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+.move-btn { border:0; border-radius:5px; color:white; font-size:14px; font-weight:700; width:125px; min-height:84px; cursor:pointer; white-space:pre-line; }
+.move-btn:disabled { opacity:.45; cursor:not-allowed; }
+.move-btn:hover:not(:disabled) { filter:brightness(1.14); transform:translateY(-1px); }
+.rock {background:#1479E8} .paper {background:#0EAA80} .scissors {background:#D98712}
+.result { font-size:15px; font-weight:700; color:var(--blue); margin:14px 0 7px; }
+.moves-label { color:var(--muted); font-size:13px; }
+h3 { font-size:14px; margin:0 0 10px; }
+.history { overflow:auto; }
+table { border-collapse:collapse; width:100%; min-width:410px; font-size:13px; }
+th { background:var(--card); text-align:center; padding:9px 6px; }
+td { text-align:center; padding:8px 6px; border-bottom:1px solid #263954; }
+.analytics { display:flex; flex-direction:column; gap:10px; }
+.streak { background:var(--card); color:var(--green); font-weight:700; padding:13px 10px; border-radius:6px; }
+canvas { width:100%; display:block; }
+.status { background:var(--card); color:var(--muted); padding:11px; border-radius:6px; white-space:pre-line; font-size:13px; line-height:1.6; }
+footer { display:flex; align-items:center; gap:10px; padding:6px 22px 18px; }
+.action { border:0; border-radius:5px; padding:11px 17px; color:white; font-weight:700; cursor:pointer; }
+.new {background:var(--purple)} .report {background:#1769AA}
+.footer-status { margin-left:auto; color:var(--green); font-size:13px; }
+button:focus-visible { outline:2px solid white; outline-offset:3px; }
+dialog { background:var(--bg); color:var(--white); border:1px solid #385071; border-radius:10px; width:min(440px,calc(100% - 30px)); padding:20px 25px; }
+dialog::backdrop {background:#000a}
+dialog h2 {color:var(--blue); font-size:18px; text-align:center}
+.report-lines {line-height:1.55}
+.dialog-actions {text-align:center; margin-top:16px}
+@media(max-width:800px) {
+  main {grid-template-columns:1fr}
+  .left {grid-template-rows:auto auto}
+  .analytics {display:grid; grid-template-columns:1fr 1fr}
+  .analytics > h3:first-child {grid-column:1/-1}
+}
+@media(max-width:520px) {
+  header {align-items:flex-start; flex-direction:column}
+  .stats {grid-template-columns:repeat(2,minmax(0,1fr)); padding:8px 12px}
+  main {padding:8px 12px}
+  footer {padding:6px 12px 16px; flex-wrap:wrap}
+  .footer-status {width:100%; margin:4px 0 0}
+  .analytics {grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>✊ ROCK PAPER SCISSORS</h1>
+  <div class="phase">PHASE 3&nbsp; | &nbsp;GAMING TRACKER</div>
+</header>
+
+<section class="stats" aria-label="Game statistics">
+  <div class="stat"><div class="stat-label">PLAYER WINS</div><div id="playerValue" class="stat-value green">0</div></div>
+  <div class="stat"><div class="stat-label">COMPUTER WINS</div><div id="computerValue" class="stat-value red">0</div></div>
+  <div class="stat"><div class="stat-label">TIES</div><div id="tiesValue" class="stat-value yellow">0</div></div>
+  <div class="stat"><div class="stat-label">WIN RATE</div><div id="rateValue" class="stat-value blue">0.0%</div></div>
+</section>
+
+<main>
+  <div class="left">
+    <section class="panel game">
+      <div id="roundLabel" class="round">ROUND 0 / 25</div>
+      <h2>Make Your Move</h2>
+      <div class="moves">
+        <button class="move-btn rock" data-move="Rock">✊<br>ROCK</button>
+        <button class="move-btn paper" data-move="Paper">✋<br>PAPER</button>
+        <button class="move-btn scissors" data-move="Scissors">✌<br>SCISSORS</button>
+      </div>
+      <div id="resultLabel" class="result" aria-live="polite">Choose a move to start the game!</div>
+      <div id="movesLabel" class="moves-label">Your choice: — &nbsp;&nbsp; Computer choice: —</div>
+    </section>
+
+    <section class="panel history">
+      <h3>GAME HISTORY</h3>
+      <table>
+        <thead><tr><th>Round</th><th>Your Move</th><th>Computer Move</th><th>Outcome</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="panel analytics">
+    <h3>PERFORMANCE DASHBOARD</h3>
+    <div id="streakLabel" class="streak">Longest win streak: 0</div>
+    <div><h3>ROUND OUTCOMES</h3><canvas id="barCanvas" height="145"></canvas></div>
+    <div><h3>PLAYER MOVE DISTRIBUTION</h3><canvas id="pieCanvas" height="155"></canvas></div>
+    <div><h3>MATCH STATUS</h3><div id="statusDetail" class="status">Rounds played: 0 / 25
+Ready to play</div></div>
+  </section>
+</main>
+
+<footer>
+  <button id="newGame" class="action new">↻ &nbsp;NEW GAME</button>
+  <button id="finalReport" class="action report">VIEW FINAL REPORT</button>
+  <div id="footerStatus" class="footer-status">● Ready to play</div>
+</footer>
+
+<dialog id="reportDialog">
+  <h2>FINAL PERFORMANCE REPORT</h2>
+  <div id="reportLines" class="report-lines"></div>
+  <div class="dialog-actions"><button id="closeReport" class="action report">CLOSE</button></div>
+</dialog>
+
+<script>
+"use strict";
+const ROUNDS = 25;
+const COLORS = {bg:"#0B1224",panel:"#14213A",card:"#1B2D4B",white:"#F4F7FB",blue:"#39A9FF",green:"#23D5AB",red:"#FF5C83",yellow:"#FFC857"};
+let state;
+
+function resetValues() {
+  state = {
+    roundNo:0, playerWins:0, computerWins:0, ties:0,
+    rockCount:0, paperCount:0, scissorsCount:0,
+    currentStreak:0, longestStreak:0, history:[], gameOver:false
+  };
+}
+function $(id) { return document.getElementById(id); }
+
+function playRound(player) {
+  if (state.gameOver) return;
+  const computer = ["Rock","Paper","Scissors"][Math.floor(Math.random()*3)];
+  state.roundNo++;
+  if (player === "Rock") state.rockCount++;
+  else if (player === "Paper") state.paperCount++;
+  else state.scissorsCount++;
+
+  let result;
+  if (player === computer) {
+    result = "Tie"; state.ties++; state.currentStreak = 0;
+  } else if (
+    (player === "Rock" && computer === "Scissors") ||
+    (player === "Paper" && computer === "Rock") ||
+    (player === "Scissors" && computer === "Paper")
+  ) {
+    result = "Player Wins"; state.playerWins++; state.currentStreak++;
+    state.longestStreak = Math.max(state.longestStreak,state.currentStreak);
+  } else {
+    result = "Computer Wins"; state.computerWins++; state.currentStreak = 0;
+  }
+
+  state.history.push({round:state.roundNo,player,computer,result});
+  const row = document.createElement("tr");
+  const color = result === "Player Wins" ? COLORS.green : result === "Computer Wins" ? COLORS.red : COLORS.yellow;
+  [state.roundNo,player,computer,result].forEach(value => {
+    const cell = document.createElement("td");
+    cell.textContent = value;
+    if (value === result) cell.style.color = color;
+    row.appendChild(cell);
+  });
+  $("historyBody").appendChild(row);
+  row.scrollIntoView({block:"nearest"});
+  $("movesLabel").textContent = `Your choice: ${player}     Computer choice: ${computer}`;
+
+  const resultLabel = $("resultLabel");
+  if (result === "Player Wins") { resultLabel.textContent = "🎉 You won this round!"; resultLabel.style.color = COLORS.green; }
+  else if (result === "Computer Wins") { resultLabel.textContent = "Computer won this round!"; resultLabel.style.color = COLORS.red; }
+  else { resultLabel.textContent = "It's a tie!"; resultLabel.style.color = COLORS.yellow; }
+
+  $("footerStatus").textContent = `● Round ${state.roundNo} completed`;
+  refreshDashboard();
+  if (state.roundNo >= ROUNDS) finishGame();
+}
+
+function refreshDashboard() {
+  $("roundLabel").textContent = `ROUND ${state.roundNo} / ${ROUNDS}`;
+  $("playerValue").textContent = state.playerWins;
+  $("computerValue").textContent = state.computerWins;
+  $("tiesValue").textContent = state.ties;
+  const rate = state.roundNo ? state.playerWins/state.roundNo*100 : 0;
+  $("rateValue").textContent = `${rate.toFixed(1)}%`;
+  $("streakLabel").textContent = `Longest win streak: ${state.longestStreak}`;
+  $("statusDetail").textContent =
+    `Rounds played: ${state.roundNo} / ${ROUNDS}\nRock: ${state.rockCount}   Paper: ${state.paperCount}\nScissors: ${state.scissorsCount}`;
+  drawBarChart(); drawPieChart();
+}
+
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  const width = Math.max(rect.width,260);
+  canvas.width = width*dpr;
+  canvas.height = Number(canvas.getAttribute("height"))*dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,width,height:Number(canvas.getAttribute("height"))};
+}
+function drawBarChart() {
+  const {ctx:c,width} = setupCanvas($("barCanvas"));
+  c.clearRect(0,0,width,145);
+  const values = [["Player",state.playerWins,COLORS.green],["Computer",state.computerWins,COLORS.red],["Ties",state.ties,COLORS.yellow]];
+  const maxValue = Math.max(...values.map(v=>v[1]),1), left=75, right=width-28, barWidth=Math.max(30,right-left);
+  values.forEach(([name,value,color],index)=>{
+    const y=12+index*42;
+    c.fillStyle=COLORS.white; c.font="12px Segoe UI, Arial"; c.textAlign="left";
+    c.fillText(name,3,y+14);
+    c.fillStyle=COLORS.card; c.fillRect(left,y,barWidth,20);
+    const fillWidth=barWidth*value/maxValue;
+    if(value){c.fillStyle=color;c.fillRect(left,y,fillWidth,20);}
+    c.fillStyle=COLORS.white;c.font="bold 12px Segoe UI, Arial";
+    c.fillText(String(value),Math.min(left+fillWidth+7,width-12),y+15);
+  });
+}
+function drawPieChart() {
+  const {ctx:c,width} = setupCanvas($("pieCanvas"));
+  c.clearRect(0,0,width,155);
+  const values=[["Rock",state.rockCount,"#39A9FF"],["Paper",state.paperCount,COLORS.green],["Scissors",state.scissorsCount,COLORS.yellow]];
+  const total=values.reduce((sum,v)=>sum+v[1],0), x=8,y=12,d=112;
+  if(!total){
+    c.beginPath();c.arc(x+d/2,y+d/2,d/2,0,Math.PI*2);c.fillStyle=COLORS.card;c.fill();
+    c.fillStyle=COLORS.white;c.font="12px Segoe UI, Arial";c.textAlign="center";c.fillText("No data yet",x+d/2,y+d/2+4);
+  } else {
+    let start=-Math.PI/2;
+    values.forEach(([name,value,color])=>{
+      if(value){
+        const extent=value/total*Math.PI*2;
+        c.beginPath();c.moveTo(x+d/2,y+d/2);c.arc(x+d/2,y+d/2,d/2,start,start+extent);c.closePath();
+        c.fillStyle=color;c.fill();c.strokeStyle=COLORS.panel;c.lineWidth=2;c.stroke();start+=extent;
+      }
+    });
+  }
+  const legendX=Math.min(135,width-105);
+  values.forEach(([name,value,color],i)=>{
+    const yy=28+i*36, percent=total?value/total*100:0;
+    c.fillStyle=color;c.fillRect(legendX,yy,12,12);
+    c.fillStyle=COLORS.white;c.font="11px Segoe UI, Arial";c.textAlign="left";
+    c.fillText(`${name}: ${value} (${percent.toFixed(0)}%)`,legendX+18,yy+11);
+  });
+}
+function finishGame() {
+  state.gameOver=true;
+  document.querySelectorAll(".move-btn").forEach(button=>button.disabled=true);
+  let winner;
+  if(state.playerWins>state.computerWins) winner="YOU WON THE MATCH!";
+  else if(state.computerWins>state.playerWins) winner="COMPUTER WON THE MATCH!";
+  else winner="THE MATCH IS A DRAW!";
+  $("resultLabel").textContent="MATCH COMPLETED!";
+  $("resultLabel").style.color=COLORS.blue;
+  $("footerStatus").textContent="● Match completed";
+  alert(`${winner}\n\nPlayer wins: ${state.playerWins}\nComputer wins: ${state.computerWins}\nTies: ${state.ties}\nWin rate: ${(state.playerWins/ROUNDS*100).toFixed(1)}%\nLongest win streak: ${state.longestStreak}\n\nClick 'VIEW FINAL REPORT' for full statistics.`);
+}
+function showReport() {
+  if(state.roundNo===0){alert("Play a round first to create your report.");return;}
+  const rate=state.playerWins/state.roundNo*100;
+  let matchResult="Match in progress";
+  if(state.roundNo>=ROUNDS){
+    if(state.playerWins>state.computerWins) matchResult="Player wins the match";
+    else if(state.computerWins>state.playerWins) matchResult="Computer wins the match";
+    else matchResult="Match draw";
+  }
+  const details=[
+    `Match status: ${matchResult}`,`Rounds played: ${state.roundNo} / ${ROUNDS}`,
+    `Player wins: ${state.playerWins}`,`Computer wins: ${state.computerWins}`,
+    `Ties: ${state.ties}`,`Player win rate: ${rate.toFixed(2)}%`,
+    `Longest win streak: ${state.longestStreak}`,"",
+    `Rock selections: ${state.rockCount}`,`Paper selections: ${state.paperCount}`,
+    `Scissors selections: ${state.scissorsCount}`
+  ];
+  $("reportLines").replaceChildren();
+  details.forEach(line=>{const p=document.createElement("p");p.textContent=line||"\u00a0";p.style.margin="7px 0";$("reportLines").appendChild(p);});
+  $("reportDialog").showModal();
+}
+function restartGame() {
+  if(state.roundNo>0 && !confirm("Start a new match? Current match results will be cleared.")) return;
+  resetValues();
+  $("historyBody").replaceChildren();
+  document.querySelectorAll(".move-btn").forEach(button=>button.disabled=false);
+  $("resultLabel").textContent="Choose a move to start the game!";
+  $("resultLabel").style.color=COLORS.blue;
+  $("movesLabel").textContent="Your choice: —     Computer choice: —";
+  $("footerStatus").textContent="● Ready to play";
+  refreshDashboard();
+}
+document.querySelectorAll(".move-btn").forEach(button=>button.addEventListener("click",()=>playRound(button.dataset.move)));
+$("newGame").addEventListener("click",restartGame);
+$("finalReport").addEventListener("click",showReport);
+$("closeReport").addEventListener("click",()=>$("reportDialog").close());
+window.addEventListener("resize",()=>{drawBarChart();drawPieChart();});
+resetValues(); refreshDashboard();
+</script>
+</body>
+</html>
+
